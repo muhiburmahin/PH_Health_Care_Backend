@@ -1,24 +1,33 @@
 import { Server } from 'http';
 import app from './app';
-import config from './app/config';
+import { envVars } from './app/config/env';
+
+let server: Server;
 
 async function main() {
-    const server: Server = app.listen(config.port, () => {
-        console.log(`🚀 Server is running on http://localhost:${config.port}`);
-    });
-
-    const exitHandler = () => {
-        if (server) {
-            server.close(() => {
-                console.log('Server closed');
-            });
-        }
-        process.exit(1);
-    };
+    try {
+        server = app.listen(envVars.PORT, () => {
+            console.log(`🚀 Server is running on http://localhost:${envVars.PORT}`);
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+    }
 
     process.on('unhandledRejection', (error) => {
-        console.log('Unhandled Rejection detected, shutting down...', error);
-        exitHandler();
+        console.log('⚠️ Unhandled Rejection detected, shutting down...', error);
+        if (server) {
+            server.close(() => {
+                process.exit(1);
+            });
+        } else {
+            process.exit(1);
+        }
+    });
+
+    // Uncaught Exception
+    process.on('uncaughtException', (error) => {
+        console.log('🚨 Uncaught Exception detected, shutting down...', error);
+        process.exit(1);
     });
 }
 

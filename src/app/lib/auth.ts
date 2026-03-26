@@ -8,7 +8,8 @@ export const auth = betterAuth({
         provider: "postgresql", // or "mysql", "postgresql", ...etc
     }),
     emailAndPassword: {
-        enabled: true
+        enabled: true,
+        autoSignIn: false,
     },
     user: {
         additionalFields: {

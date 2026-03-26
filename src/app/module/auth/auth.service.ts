@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { userStatus, Role } from '../../../generated/prisma/enums';
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
+import { userStatus } from '../../../generated/prisma/enums';
 
 interface IRegisterPatientPayload {
     name: string;
@@ -12,7 +12,7 @@ interface IRegisterPatientPayload {
 const registerPatient = async (payload: IRegisterPatientPayload) => {
     const { name, email, password } = payload;
 
-    const data = await auth.api.signUpEmail({
+    const authData = await auth.api.signUpEmail({
         body: {
             name,
             email,
@@ -20,34 +20,40 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
         } as any
     });
 
-    if (!data || !data.user) {
+    if (!authData || !authData.user) {
         throw new Error("Failed to register user in Auth system");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-        const updatedUser = await tx.user.update({
-            where: { email: data.user.email },
-            data: {
-                role: Role.PATIENT,
-                status: userStatus.ACTIVE,
-            }
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const patientProfile = await (tx as any).patient.create({
+                data: {
+                    userId: authData.user.id,
+                    email: authData.user.email,
+                    name: authData.user.name,
+                }
+            });
+
+            return {
+                user: authData.user,
+                profile: patientProfile
+            };
         });
-        const patientProfile = await (tx as any).patient.create({
-            data: {
-                email: updatedUser.email,
-                name: updatedUser.name,
+
+        return result;
+
+    } catch (error: any) {
+        console.error("Profile creation failed, deleting user from DB...", error.message);
+
+        await prisma.user.delete({
+            where: {
+                id: authData.user.id
             }
         });
 
-        return {
-            user: updatedUser,
-            profile: patientProfile
-        };
-    });
-
-    return result;
+        //  throw new Error(`Registration failed: ${error.message}. User has been rolled back.`);
+    }
 };
-
 
 interface ILoginUserPayload {
     email: string;
@@ -68,6 +74,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
         throw new Error("Invalid email or password");
     }
 
+    // স্ট্যাটাস চেক
     if (data.user.status === userStatus.BLOCKED) {
         throw new Error("Your account is blocked. Please contact support.");
     }
