@@ -8,8 +8,23 @@ model Specialty {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Relationships
+  doctors           Doctor[]            
+  doctorSpecialties DoctorSpecialties[] 
 
   @@index([isDeleted], name: "idx_specialty_isDeleted")
   @@index([title], name: "idx_specialty_title")
   @@map("specialties")
+}
+
+
+model DoctorSpecialties {
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  specialtyId String
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, specialtyId])
+  @@map("doctor_specialties")
 }
