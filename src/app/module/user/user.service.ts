@@ -17,7 +17,6 @@ const createDoctor = async (payload: ICreateDoctorPayload) => {
             }
         })
         if (!specialty) {
-            // throw new Error(`Specialty with id ${specialtyId} not found`);
             throw new AppError(status.NOT_FOUND, `Specialty with id ${specialtyId} not found`);
         }
         specialties.push(specialty);

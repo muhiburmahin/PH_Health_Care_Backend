@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import status from "http-status";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
-import { userStatus } from '../../../generated/prisma/enums';
+import { tokenUtils } from "../../utils/token";
+import AppError from "../../middleware/appError";
 
 interface IRegisterPatientPayload {
     name: string;
@@ -9,81 +11,85 @@ interface IRegisterPatientPayload {
     password: string;
 }
 
-const registerPatient = async (payload: IRegisterPatientPayload) => {
-    const { name, email, password } = payload;
-
-    const authData = await auth.api.signUpEmail({
-        body: {
-            name,
-            email,
-            password,
-        } as any
-    });
-
-    if (!authData || !authData.user) {
-        throw new Error("Failed to register user in Auth system");
-    }
-
-    try {
-        const result = await prisma.$transaction(async (tx) => {
-            const patientProfile = await (tx as any).patient.create({
-                data: {
-                    userId: authData.user.id,
-                    email: authData.user.email,
-                    name: authData.user.name,
-                }
-            });
-
-            return {
-                user: authData.user,
-                profile: patientProfile
-            };
-        });
-
-        return result;
-
-    } catch (error: any) {
-        console.error("Profile creation failed, deleting user from DB...", error.message);
-
-        await prisma.user.delete({
-            where: {
-                id: authData.user.id
-            }
-        });
-
-        //  throw new Error(`Registration failed: ${error.message}. User has been rolled back.`);
-    }
-};
-
 interface ILoginUserPayload {
     email: string;
     password: string;
 }
 
+const registerPatient = async (payload: IRegisterPatientPayload) => {
+    const { name, email, password } = payload;
+
+    // Better Auth API Call
+    const data = (await auth.api.signUpEmail({
+        body: { name, email, password }
+    })) as any;
+
+    if (!data?.user) {
+        throw new AppError(status.BAD_REQUEST, "Failed to register patient");
+    }
+
+    try {
+        const patient = await prisma.$transaction(async (tx) => {
+            const patientTx = await tx.patient.create({
+                data: {
+                    userId: data.user.id,
+                    name: payload.name,
+                    email: payload.email,
+                }
+            });
+            return patientTx;
+        });
+
+        const tokenPayload = {
+            userId: data.user.id,
+            role: data.user.role,
+            email: data.user.email,
+        };
+
+        const accessToken = tokenUtils.getAccessToken(tokenPayload);
+        const refreshToken = tokenUtils.getRefreshToken(tokenPayload);
+
+        return {
+            user: data.user,
+            session: data.session || data,
+            accessToken,
+            refreshToken,
+            patient
+        };
+    } catch (error: any) {
+        if (data?.user?.id) {
+            await prisma.user.delete({ where: { id: data.user.id } });
+        }
+        throw error;
+    }
+};
+
 const loginUser = async (payload: ILoginUserPayload) => {
     const { email, password } = payload;
 
-    const data = await auth.api.signInEmail({
-        body: {
-            email,
-            password,
-        }
-    }) as any;
+    const data = (await auth.api.signInEmail({
+        body: { email, password }
+    })) as any;
 
     if (!data?.user) {
-        throw new Error("Invalid email or password");
+        throw new AppError(status.UNAUTHORIZED, "Invalid credentials");
     }
 
-    // স্ট্যাটাস চেক
-    if (data.user.status === userStatus.BLOCKED) {
-        throw new Error("Your account is blocked. Please contact support.");
-    }
+    const tokenPayload = {
+        userId: data.user.id,
+        role: data.user.role,
+        email: data.user.email,
+    };
 
-    if (data.user.isDeleted || data.user.status === userStatus.DELETED) {
-        throw new Error("This account no longer exists.");
-    }
+    const accessToken = tokenUtils.getAccessToken(tokenPayload);
+    const refreshToken = tokenUtils.getRefreshToken(tokenPayload);
 
-    return data;
+    return {
+        user: data.user,
+        session: data.session || data,
+        accessToken,
+        refreshToken
+    };
 };
 
 export const AuthService = {
