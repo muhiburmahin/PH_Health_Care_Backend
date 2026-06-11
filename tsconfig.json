@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "ESNext", 
     "moduleResolution": "bundler", 
-    "target": "ES2023",                              
+    "target": "ES2022",
     "rootDir": "./",
     "outDir": "./dist",  
    // "moduleResolution": "node10", 
@@ -10,10 +10,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "5.0"
   },
    "include": [
     "src",
+    "server.ts",
     "prisma.config.ts"
   ],
   "exclude": [

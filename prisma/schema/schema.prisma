@@ -1,7 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// ============================================================
+// PRISMA SCHEMA — Healthcare Management System
+// Author: Md. Muhibur Rahman Mahin
+// Version: 2.0.0 (Production Ready)
+// ============================================================
 
 generator client {
   provider = "prisma-client"
@@ -11,4 +12,3 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-

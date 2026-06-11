@@ -1,30 +1,28 @@
 import express, { Application, Request, Response } from 'express';
-import { IndexRoutes } from './app/routes';
-import { globalErrorHandler } from './app/middleware/globalErrorHandler';
-import notFound from './app/middleware/notFound';
-import AppError from './app/middleware/appError';
-import status from "http-status";
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import { API_PREFIX } from './constants';
+import { IndexRoutes } from './app/routes';
+import { errorMiddleware, notFoundMiddleware } from './middlewares/error.middleware';
+import { rateLimitMiddleware } from './middlewares/rateLimit.middleware';
 
 const app: Application = express();
 
-// Parsers
-//app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use(rateLimitMiddleware());
 
-// Application Routes
-app.get('/', (req: Request, res: Response) => {
-    throw new AppError(status.BAD_REQUEST, "bad error")
-    res.send({
-        message: 'PH Health Care Server is running...',
-    });
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'PH Health Care Server is running...',
+  });
 });
 
-app.use("/api/v1/", IndexRoutes)
-app.use(globalErrorHandler)
-app.use(notFound)
-
+app.use(API_PREFIX, IndexRoutes);
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
 
 export default app;

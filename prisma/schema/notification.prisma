@@ -1,0 +1,22 @@
+// ============================================================
+// NOTIFICATION MODEL
+// ============================================================
+
+model Notification {
+  id        String           @id @default(uuid(7))
+  title     String           @db.VarChar(255)
+  message   String           @db.Text
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@map("notifications")
+}

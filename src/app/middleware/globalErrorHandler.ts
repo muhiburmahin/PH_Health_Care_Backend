@@ -4,7 +4,7 @@ import status from "http-status";
 import z from "zod";
 import { envVars } from "../config/env";
 import { handleZodError } from "../errorHelpers/handleZodError";
-import { TErrorResponse, TErrorSources } from "../interfaces/error.interface";
+import { TErrorResponse, TErrorSources } from "../../../../../Planora/planora-backend/src/app/interfaces/error.interface";
 import AppError from "./appError";
 
 
