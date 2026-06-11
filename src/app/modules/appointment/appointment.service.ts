@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
 import status from 'http-status';
-import { AppointmentStatus, Prisma, Role } from '../../../generated/prisma';
+import { AppointmentStatus, NotificationType, Prisma, Role } from '../../../generated/prisma';
 import { prisma } from '../../../config/prisma';
 import AppError from '../../../errors/AppError';
+import { notifyMany, notifyUser } from '../../../utils/notification.utils';
 import { getPagination, getPaginationMeta } from '../../../utils/pagination.utils';
 
 type BookAppointmentPayload = {
@@ -118,6 +119,7 @@ const bookAppointment = async (userId: string, payload: BookAppointmentPayload) 
 
   const doctor = await prisma.doctor.findFirst({
     where: { id: payload.doctorId, isDeleted: false, isAvailable: true },
+    select: { id: true, name: true, userId: true },
   });
 
   if (!doctor) {
@@ -183,6 +185,25 @@ const bookAppointment = async (userId: string, payload: BookAppointmentPayload) 
 
     return created;
   });
+
+  notifyMany([
+    {
+      userId,
+      title: 'Appointment Booked',
+      message: `Your appointment with Dr. ${doctor.name} has been scheduled successfully.`,
+      type: NotificationType.APPOINTMENT,
+      metadata: { appointmentId: appointment.id },
+      sendEmail: true,
+    },
+    {
+      userId: doctor.userId,
+      title: 'New Appointment',
+      message: `${patient.name} booked an appointment with you.`,
+      type: NotificationType.APPOINTMENT,
+      metadata: { appointmentId: appointment.id },
+      sendEmail: true,
+    },
+  ]);
 
   return formatAppointment(appointment);
 };
@@ -374,6 +395,25 @@ const cancelAppointment = async (
     return canceled;
   });
 
+  notifyMany([
+    {
+      userId: appointment.patient.userId,
+      title: 'Appointment Canceled',
+      message: `Your appointment has been canceled. Reason: ${cancelReason}`,
+      type: NotificationType.APPOINTMENT,
+      metadata: { appointmentId: id },
+      sendEmail: true,
+    },
+    {
+      userId: appointment.doctor.userId,
+      title: 'Appointment Canceled',
+      message: `An appointment has been canceled. Reason: ${cancelReason}`,
+      type: NotificationType.APPOINTMENT,
+      metadata: { appointmentId: id },
+      sendEmail: true,
+    },
+  ]);
+
   return formatAppointment(updated);
 };
 
@@ -414,6 +454,20 @@ const updateAppointmentStatus = async (
     where: { id },
     data: { status: newStatus },
     include: appointmentInclude,
+  });
+
+  const statusMessages: Partial<Record<AppointmentStatus, string>> = {
+    [AppointmentStatus.INPROGRESS]: 'Your appointment is now in progress.',
+    [AppointmentStatus.COMPLETED]: 'Your appointment has been completed.',
+  };
+
+  notifyUser({
+    userId: updated.patient.userId,
+    title: 'Appointment Status Updated',
+    message: statusMessages[newStatus] || `Your appointment status is now ${newStatus}.`,
+    type: NotificationType.APPOINTMENT,
+    metadata: { appointmentId: id, status: newStatus },
+    sendEmail: newStatus === AppointmentStatus.COMPLETED,
   });
 
   return formatAppointment(updated);

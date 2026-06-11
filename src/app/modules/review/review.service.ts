@@ -1,7 +1,8 @@
 import status from 'http-status';
-import { AppointmentStatus, Prisma, Role } from '../../../generated/prisma';
+import { AppointmentStatus, NotificationType, Prisma, Role } from '../../../generated/prisma';
 import { prisma } from '../../../config/prisma';
 import AppError from '../../../errors/AppError';
+import { notifyUser } from '../../../utils/notification.utils';
 import { getPagination, getPaginationMeta } from '../../../utils/pagination.utils';
 
 type CreateReviewPayload = {
@@ -143,6 +144,14 @@ const createReview = async (userId: string, payload: CreateReviewPayload) => {
 
     await recalculateDoctorRating(appointment.doctorId, tx);
     return created;
+  });
+
+  notifyUser({
+    userId: review.doctor.userId,
+    title: 'New Review Received',
+    message: `${review.patient.name} left a ${review.rating}-star review on your appointment.`,
+    type: NotificationType.REVIEW,
+    metadata: { reviewId: review.id, appointmentId: payload.appointmentId, rating: review.rating },
   });
 
   return formatReview(review);

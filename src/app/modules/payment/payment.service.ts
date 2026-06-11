@@ -1,9 +1,15 @@
 import { randomUUID } from 'crypto';
 import status from 'http-status';
-import { AppointmentStatus, PaymentStatus, Prisma, Role } from '../../../generated/prisma';
+import {
+  NotificationType,
+  PaymentStatus,
+  Prisma,
+  Role,
+} from '../../../generated/prisma';
 import { config } from '../../../config';
 import { prisma } from '../../../config/prisma';
 import AppError from '../../../errors/AppError';
+import { notifyMany } from '../../../utils/notification.utils';
 import { getPagination, getPaginationMeta } from '../../../utils/pagination.utils';
 import { getStripeClient, toStripeAmount } from '../../../utils/stripe.utils';
 import { initSslcommerzSession, validateSslcommerzPayment } from '../../../utils/sslcommerz.utils';
@@ -138,6 +144,34 @@ const markPaymentSuccess = async (
       data: { paymentStatus: PaymentStatus.PAID },
     }),
   ]);
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: payment.appointmentId },
+    include: {
+      patient: { select: { userId: true } },
+      doctor: { select: { userId: true, name: true } },
+    },
+  });
+
+  if (appointment) {
+    notifyMany([
+      {
+        userId: appointment.patient.userId,
+        title: 'Payment Successful',
+        message: `Your payment of ${payment.amount} for the appointment with Dr. ${appointment.doctor.name} was successful.`,
+        type: NotificationType.PAYMENT,
+        metadata: { appointmentId: appointment.id, transactionId },
+        sendEmail: true,
+      },
+      {
+        userId: appointment.doctor.userId,
+        title: 'Payment Received',
+        message: `Payment of ${payment.amount} was received for an appointment.`,
+        type: NotificationType.PAYMENT,
+        metadata: { appointmentId: appointment.id, transactionId },
+      },
+    ]);
+  }
 
   return updatedPayment;
 };

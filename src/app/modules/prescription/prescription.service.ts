@@ -1,12 +1,14 @@
 import status from 'http-status';
 import {
   AppointmentStatus,
+  NotificationType,
   Prisma,
   PrescriptionStatus,
   Role,
 } from '../../../generated/prisma';
 import { prisma } from '../../../config/prisma';
 import AppError from '../../../errors/AppError';
+import { notifyUser } from '../../../utils/notification.utils';
 import { getPagination, getPaginationMeta } from '../../../utils/pagination.utils';
 
 type MedicinePayload = {
@@ -161,6 +163,15 @@ const createPrescription = async (userId: string, payload: CreatePrescriptionPay
     }
 
     return created;
+  });
+
+  notifyUser({
+    userId: prescription.patient.userId,
+    title: 'New Prescription',
+    message: `Dr. ${prescription.doctor.name} has issued a new prescription for you.`,
+    type: NotificationType.PRESCRIPTION,
+    metadata: { prescriptionId: prescription.id, appointmentId: payload.appointmentId },
+    sendEmail: true,
   });
 
   return formatPrescription(prescription);
