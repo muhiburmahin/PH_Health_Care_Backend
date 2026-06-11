@@ -3,7 +3,7 @@
 // ============================================================
 
 model Review {
-  id        String   @id @default(uuid(7))
+  id        String   @id @default(uuid())
   rating    Float    @default(0.0)
   comment   String?  @db.Text
   isVisible Boolean  @default(true)

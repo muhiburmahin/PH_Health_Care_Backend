@@ -3,7 +3,7 @@
 // ============================================================
 
 model Prescription {
-  id           String             @id @default(uuid(7))
+  id           String             @id @default(uuid())
   instructions String             @db.Text
   followUpDate DateTime?
   status       PrescriptionStatus @default(ACTIVE)

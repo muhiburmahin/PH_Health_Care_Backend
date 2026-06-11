@@ -3,7 +3,7 @@
 // ============================================================
 
 model Payment {
-  id                 String        @id @default(uuid(7))
+  id                 String        @id @default(uuid())
   amount             Float
   transactionId      String        @unique @db.VarChar(100)
   status             PaymentStatus @default(UNPAID)

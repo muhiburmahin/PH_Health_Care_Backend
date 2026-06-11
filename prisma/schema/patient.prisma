@@ -3,7 +3,7 @@
 // ============================================================
 
 model Patient {
-  id            String    @id @default(uuid(7))
+  id            String    @id @default(uuid())
   name          String    @db.VarChar(100)
   email         String    @unique @db.VarChar(150)
   profilePhoto  String?
@@ -28,7 +28,7 @@ model Patient {
 }
 
 model PatientHealthData {
-  id                  String     @id @default(uuid(7))
+  id                  String     @id @default(uuid())
   gender              Gender
   dateOfBirth         DateTime
   bloodGroup          BloodGroup
@@ -59,7 +59,7 @@ model PatientHealthData {
 }
 
 model MedicalReport {
-  id          String     @id @default(uuid(7))
+  id          String     @id @default(uuid())
   reportName  String     @db.VarChar(255)
   reportLink  String     @db.Text
   reportType  ReportType @default(OTHER)

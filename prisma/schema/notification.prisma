@@ -3,7 +3,7 @@
 // ============================================================
 
 model Notification {
-  id        String           @id @default(uuid(7))
+  id        String           @id @default(uuid())
   title     String           @db.VarChar(255)
   message   String           @db.Text
   type      NotificationType

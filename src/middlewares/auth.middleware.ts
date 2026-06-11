@@ -1,52 +1,65 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
-import { Role, UserStatus } from '../generated/prisma/enums';
-import { config } from '../config';
+import { Role, UserStatus } from '../generated/prisma';
 import { prisma } from '../config/prisma';
 import AppError from '../errors/AppError';
 import { COOKIE_KEYS } from '../constants';
-import { jwtUtils } from '../utils/jwt.utils';
+import { verifyAccessToken } from '../app/modules/auth/auth.utils';
 
-const getCookie = (req: Request, key: string) => req.cookies[key];
+const getAccessToken = (req: Request) => {
+  const cookieToken = req.cookies?.[COOKIE_KEYS.ACCESS_TOKEN];
+  if (cookieToken) return cookieToken;
 
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+
+  return null;
+};
+
+export const authMiddleware = async (req: Request, _res: Response, next: NextFunction) => {
   try {
-    const sessionToken = getCookie(req, COOKIE_KEYS.SESSION_TOKEN);
-
-    if (sessionToken) {
-      const session = await prisma.session.findFirst({
-        where: {
-          token: sessionToken,
-          expiresAt: { gt: new Date() },
-        },
-        include: { user: true },
-      });
-
-      if (session?.user) {
-        const { user } = session;
-
-        if (user.status === UserStatus.BLOCKED || user.status === UserStatus.DELETED || user.isDeleted) {
-          throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! User is not active.');
-        }
-      }
-    }
-
-    const accessToken = getCookie(req, COOKIE_KEYS.ACCESS_TOKEN);
+    const accessToken = getAccessToken(req);
 
     if (!accessToken) {
       throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! No access token provided.');
     }
 
-    const verifiedToken = jwtUtils.verifyToken(accessToken, config.ACCESS_TOKEN_SECRET);
+    const verified = verifyAccessToken(accessToken);
+    if (!verified.success) {
+      throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! Invalid or expired access token.');
+    }
 
-    if (!verifiedToken.success) {
-      throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! Invalid access token.');
+    const user = await prisma.user.findUnique({
+      where: { id: verified.data.userId },
+    });
+
+    if (!user || user.isDeleted || user.status === UserStatus.DELETED) {
+      throw new AppError(status.UNAUTHORIZED, 'Unauthorized access! User not found.');
+    }
+
+    if (user.status === UserStatus.BLOCKED) {
+      throw new AppError(status.FORBIDDEN, 'Account is blocked.');
+    }
+
+    const session = await prisma.session.findFirst({
+      where: {
+        id: verified.data.sessionId,
+        userId: user.id,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!session) {
+      throw new AppError(status.UNAUTHORIZED, 'Session expired. Please login again.');
     }
 
     req.user = {
-      userId: verifiedToken.data.userId as string,
-      email: verifiedToken.data.email as string,
-      role: verifiedToken.data.role as Role,
+      userId: user.id,
+      email: user.email,
+      role: user.role as Role,
     };
 
     next();

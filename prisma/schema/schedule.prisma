@@ -3,7 +3,7 @@
 // ============================================================
 
 model Schedule {
-  id        String   @id @default(uuid(7))
+  id        String   @id @default(uuid())
   startTime DateTime
   endTime   DateTime
   createdAt DateTime @default(now())

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import status from 'http-status';
 import { ZodError } from 'zod';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma } from '../generated/prisma';
 import { config } from '../config';
 import AppError from '../errors/AppError';
 import { handleZodError } from '../errors/handleZodError';

@@ -3,7 +3,7 @@
 // ============================================================
 
 model Doctor {
-  id                  String    @id @default(uuid(7))
+  id                  String    @id @default(uuid())
   name                String    @db.VarChar(100)
   email               String    @unique @db.VarChar(150)
   profilePhoto        String?
