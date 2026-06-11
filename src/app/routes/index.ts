@@ -10,7 +10,9 @@ import { PrescriptionRoutes } from '../modules/prescription/prescription.routes'
 import { ReviewRoutes } from '../modules/review/review.routes';
 import { ScheduleRoutes } from '../modules/schedule/schedule.routes';
 import { SpecialtyRoutes } from '../modules/specialty/specialty.routes';
+import { UploadRoutes } from '../modules/upload/upload.routes';
 import { UserRoutes } from '../modules/user/user.routes';
+import { VideoCallRoutes } from '../modules/video-call/video-call.routes';
 
 const router = Router();
 
@@ -26,5 +28,7 @@ router.use('/prescriptions', PrescriptionRoutes);
 router.use('/reviews', ReviewRoutes);
 router.use('/specialties', SpecialtyRoutes);
 router.use('/schedules', ScheduleRoutes);
+router.use('/upload', UploadRoutes);
+router.use('/video-call', VideoCallRoutes);
 
 export const IndexRoutes = router;

@@ -29,6 +29,13 @@ interface EnvConfig {
   SSLCOMMERZ_STORE_PASSWORD?: string;
   SSLCOMMERZ_IS_LIVE: boolean;
   SSLCOMMERZ_CURRENCY: string;
+  VIDEO_PROVIDER: 'agora' | 'zego';
+  AGORA_APP_ID?: string;
+  AGORA_APP_CERTIFICATE?: string;
+  AGORA_TOKEN_EXPIRE_SECONDS: number;
+  ZEGO_APP_ID?: number;
+  ZEGO_SERVER_SECRET?: string;
+  ZEGO_TOKEN_EXPIRE_SECONDS: number;
 }
 
 const requiredEnvVariables = [
@@ -73,6 +80,13 @@ const loadEnvVariables = (): EnvConfig => {
     SSLCOMMERZ_STORE_PASSWORD: process.env.SSLCOMMERZ_STORE_PASSWORD,
     SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE === 'true',
     SSLCOMMERZ_CURRENCY: process.env.SSLCOMMERZ_CURRENCY || 'BDT',
+    VIDEO_PROVIDER: (process.env.VIDEO_PROVIDER as 'agora' | 'zego') || 'agora',
+    AGORA_APP_ID: process.env.AGORA_APP_ID,
+    AGORA_APP_CERTIFICATE: process.env.AGORA_APP_CERTIFICATE,
+    AGORA_TOKEN_EXPIRE_SECONDS: Number(process.env.AGORA_TOKEN_EXPIRE_SECONDS || 3600),
+    ZEGO_APP_ID: process.env.ZEGO_APP_ID ? Number(process.env.ZEGO_APP_ID) : undefined,
+    ZEGO_SERVER_SECRET: process.env.ZEGO_SERVER_SECRET,
+    ZEGO_TOKEN_EXPIRE_SECONDS: Number(process.env.ZEGO_TOKEN_EXPIRE_SECONDS || 3600),
   };
 };
 
