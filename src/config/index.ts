@@ -21,6 +21,14 @@ interface EnvConfig {
   CLOUDINARY_API_KEY?: string;
   CLOUDINARY_API_SECRET?: string;
   SMS_API_KEY?: string;
+  BACKEND_URL: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_CURRENCY: string;
+  SSLCOMMERZ_STORE_ID?: string;
+  SSLCOMMERZ_STORE_PASSWORD?: string;
+  SSLCOMMERZ_IS_LIVE: boolean;
+  SSLCOMMERZ_CURRENCY: string;
 }
 
 const requiredEnvVariables = [
@@ -57,6 +65,14 @@ const loadEnvVariables = (): EnvConfig => {
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     SMS_API_KEY: process.env.SMS_API_KEY,
+    BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_CURRENCY: process.env.STRIPE_CURRENCY || 'usd',
+    SSLCOMMERZ_STORE_ID: process.env.SSLCOMMERZ_STORE_ID,
+    SSLCOMMERZ_STORE_PASSWORD: process.env.SSLCOMMERZ_STORE_PASSWORD,
+    SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE === 'true',
+    SSLCOMMERZ_CURRENCY: process.env.SSLCOMMERZ_CURRENCY || 'BDT',
   };
 };
 
